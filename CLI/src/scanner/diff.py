@@ -19,3 +19,11 @@ def changed_ports(old, new):
         if opened or closed:
             changes[ip] = {"opened": opened, "closed": closed}
     return changes
+
+def compare_scans(old, new):
+    """Junta todo en un solo resultado."""
+    return {
+        "new": new_devices(old, new),
+        "removed": removed_devices(old, new),
+        "ports": changed_ports(old, new),
+    }
