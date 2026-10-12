@@ -13,3 +13,13 @@ def save_snapshot(devices, folder=DEFAULT_FOLDER):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(devices, f, indent=2)
     return path
+
+def load_latest_snapshot(folder=DEFAULT_FOLDER):
+    """Devuelve el ultimo escaneo guardado, o None si no hay ninguno."""
+    if not os.path.isdir(folder):
+        return None
+    files = sorted(f for f in os.listdir(folder) if f.endswith(".json"))
+    if not files:
+        return None
+    with open(os.path.join(folder, files[-1]), encoding="utf-8") as f:
+        return json.load(f)
