@@ -16,3 +16,11 @@ def parse_services(scanner):
                 services[port] = " ".join(text.split())
         result[ip] = services
     return result
+
+def deep_scan(target):
+    """Escaneo profundo: "-sV" pregunta a cada puerto que programa usa."""
+    import nmap
+
+    scanner = nmap.PortScanner()
+    scanner.scan(hosts=target, arguments="-sV")
+    return parse_services(scanner)
