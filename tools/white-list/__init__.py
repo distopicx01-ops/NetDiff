@@ -14,3 +14,12 @@ def add(ip, path=DEFAULT_PATH):
         items.append(ip)
         write_json(path, items)
     return items
+
+def remove(ip, path=DEFAULT_PATH):
+    items = [item for item in get_all(path) if item != ip]
+    write_json(path, items)
+    return items
+
+
+def contains(ip, path=DEFAULT_PATH):
+    return ip in get_all(path)
