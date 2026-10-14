@@ -1,10 +1,7 @@
-from sqlalchemy.orm import (
-    sessionmaker,
-    declarative_base,
-)
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import create_engine
 
-DATABASE = "sqlite+aiosql:///./data.db"
+DATABASE = "sqlite:///./data.db"
 
 engine = create_engine(
     DATABASE,
@@ -19,8 +16,9 @@ SessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
-def Base(declarative_base):
-    pass
+Base = declarative_base()
+
+Base.metadata.create_all(engine)
 
 def get_db():
     db = SessionLocal()
