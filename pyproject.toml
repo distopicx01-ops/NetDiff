@@ -7,7 +7,15 @@ authors = [
     { name = "distopicx01-ops", email = "distopicx01@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "aiosql>=15.0",
+    "dotenv>=0.9.9",
+    "fastapi>=0.143.1",
+    "httpx>=0.28.1",
+    "pydantic>=2.14.1",
+    "python-nmap>=0.7.1",
+    "sqlalchemy>=2.1.4",
+]
 
 [project.scripts]
 netdiff = "netdiff:main"
