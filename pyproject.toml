@@ -1,7 +1,7 @@
 [project]
 name = "netdiff"
 version = "0.1.0"
-description = "Add your description here"
+description = "Escanea tu red y muestra que cambio desde el ultimo escaneo"
 readme = "README.md"
 authors = [
     { name = "distopicx01-ops", email = "distopicx01@gmail.com" }
