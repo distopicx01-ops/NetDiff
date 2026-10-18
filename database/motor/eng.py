@@ -1,11 +1,20 @@
+import os
+
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import create_engine
 
-DATABASE = "sqlite:///./data.db"
+# Docker cambia esta URL con la variable de entorno DATABASE
+DATABASE = os.getenv("DATABASE", "sqlite:///./data.db")
+
+if DATABASE.startswith("sqlite:///"):
+    # Si la base vive en una carpeta (ej. ./data/), la creamos
+    folder = os.path.dirname(DATABASE.replace("sqlite:///", "", 1))
+    if folder:
+        os.makedirs(folder, exist_ok=True)
 
 engine = create_engine(
     DATABASE,
-    echo=True,
+    echo=os.getenv("SQL_ECHO", "0") == "1",
     pool_timeout=10,
     connect_args={"check_same_thread": False}
 )
