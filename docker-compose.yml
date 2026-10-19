@@ -1,0 +1,27 @@
+services:
+  # El demonio: revisa la red cada INTERVAL segundos y guarda los cambios
+  daemon:
+    build: .
+    container_name: netdiff-daemon
+    command: ["python", "-m", "backend.daemon"]
+    restart: unless-stopped
+    environment:
+      TARGET: ${TARGET:-127.0.0.1}
+      INTERVAL: ${INTERVAL:-300}
+    volumes:
+      - netdiff-data:/app/data
+
+  # La API: consulta lo que guardo el demonio
+  api:
+    build: .
+    container_name: netdiff-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - netdiff-data:/app/data
+    depends_on:
+      - daemon
+
+volumes:
+  netdiff-data:
