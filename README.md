@@ -30,3 +30,34 @@ python -m unittest discover -s tests -t .
 ```
 
 La estructura del proyecto esta explicada en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+## Con Docker (demonio + API)
+
+```
+TARGET=192.168.1.0/24 INTERVAL=300 docker compose up -d --build
+```
+
+En PowerShell:
+
+```
+$env:TARGET="192.168.1.0/24"; $env:INTERVAL="300"; docker compose up -d --build
+```
+
+- `daemon` revisa la red cada `INTERVAL` segundos y guarda los cambios.
+- `api` queda en http://localhost:8000 (documentacion en `/docs`).
+
+| Endpoint | Que devuelve |
+|---|---|
+| `GET /health` | Si la API esta viva |
+| `GET /status` | Resumen: equipos, eventos, ultimo escaneo |
+| `GET /devices` | Equipos con puertos abiertos y sistema probable |
+| `GET /devices/{ip}` | Un equipo con su historial |
+| `GET /events?kind=new_device&limit=50` | Cambios detectados |
+| `GET /operations` | Escaneos hechos por el demonio |
+| `GET /snapshot/latest` | Ultima foto de la red |
+| `GET /lists` | White list y black list |
+
+Ver logs del demonio: `docker compose logs -f daemon`
+
+> Nota: en Docker Desktop (Windows/Mac) el contenedor no ve tu red WiFi/LAN
+> directamente. En Linux puedes agregar `network_mode: host` al servicio `daemon`
+> para que escanee tu red real.
