@@ -30,7 +30,31 @@ python -m unittest discover -s tests -t .
 ```
 
 La estructura del proyecto esta explicada en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-## Con Docker (demonio + API)
+## Modo Dual (Bucle automático en red)
+
+NetDiff soporta **Modo Dual** para que elijas como prefieres usarlo:
+
+### 1. Modo Local (Recomendado en Windows para red WiFi/LAN real)
+No necesitas tener Docker abierto. Se conecta directamente a tu red fisica, autodetecta tu rango IP (ej. `10.0.0.0/24`), vigila en bucle y levanta la API web:
+
+- **Opcion rapida (1 clic):** Doble clic en `iniciar_bucle.bat`
+- **O desde consola:**
+  ```bash
+  python modo_dual.py
+  ```
+  *(La API web queda abierta en `http://localhost:8000/docs` mientras el demonio vigila tu red en bucle).*
+
+### 2. Modo Docker
+Si tienes instalada y abierta la aplicacion Docker Desktop:
+
+```bash
+python modo_dual.py --docker
+```
+O directamente con docker compose:
+```bash
+docker compose up -d --build
+```
+
 
 ```
 TARGET=192.168.1.0/24 INTERVAL=300 docker compose up -d --build
