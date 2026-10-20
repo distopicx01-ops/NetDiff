@@ -1,9 +1,11 @@
 import os
 import socket
-import time
+import asyncio
+from dotenv import load_dotenv
 from backend.monitor import run_check
-from database.init_db import init_db
-from database.motor.eng import SessionLocal
+from database.motor.eng import init_db, AsyncSessionLocal
+
+load_dotenv()
 
 def detect_target():
     target_env = os.getenv('TARGET')
@@ -18,37 +20,28 @@ def detect_target():
     except Exception:
         return '127.0.0.1'
 
-def run_daemon_loop(target=None, interval=None):
-    init_db()
+async def run_daemon_loop(target=None, interval=None):
+    await init_db()
     target = target or detect_target()
     interval = int(interval or os.getenv('INTERVAL', '300'))
-    print(f'=== NetDiff Demonio ===', flush=True)
+    print(f'=== NetDiff Demonio (Async) ===', flush=True)
     print(f'Red objetivo : {target}', flush=True)
     print(f'Frecuencia   : cada {interval} segundos', flush=True)
-    print(f'Presiona Ctrl+C para detener.\n', flush=True)
     ciclo = 1
     while True:
-        print(f'[{ciclo}] Iniciando escaneo de {target}...', flush=True)
-        db = SessionLocal()
-        try:
-            result = run_check(db, target)
-            print(f"    -> Nuevos: {len(result['new'])} | Desconectados: {len(result['removed'])} | Cambios de puertos: {len(result['ports'])}", flush=True)
-            for ip in result['new']:
-                print(f'       + Nuevo equipo detectado: {ip}', flush=True)
-            for ip in result['removed']:
-                print(f'       - Equipo ya no responde: {ip}', flush=True)
-            for ip, pinfo in result['ports'].items():
-                print(f'       * Puertos cambiados en {ip}: {pinfo}', flush=True)
-        except Exception as error:
-            db.rollback()
-            print(f'    [!] Error en escaneo: {error}', flush=True)
-        finally:
-            db.close()
-        print(f'    Esperando {interval} segundos para la siguiente vuelta...\n', flush=True)
+        print(f'[{ciclo}] Escaneando {target}...', flush=True)
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await run_check(db, target)
+                print(f"    -> Nuevos: {len(result['new'])} | Quitados: {len(result['removed'])} | Puertos: {len(result['ports'])}", flush=True)
+            except Exception as error:
+                await db.rollback()
+                print(f'    [!] Error en escaneo: {error}', flush=True)
         ciclo += 1
-        time.sleep(interval)
+        await asyncio.sleep(interval)
 
 def main():
-    run_daemon_loop()
+    asyncio.run(run_daemon_loop())
+
 if __name__ == '__main__':
     main()

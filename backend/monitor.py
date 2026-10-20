@@ -1,55 +1,63 @@
+import asyncio
+from datetime import datetime
+from sqlalchemy import select
 from backend.models.device import Device
 from backend.models.event import Event
 from backend.models.operation import Operation
 from backend.models.track import Track
+from backend.redis_cache import publish_event, cache_set
 from CLI.src.scanner.diff import compare_scans
 from CLI.src.scanner.nmap_scan import scan_network
 from CLI.src.scanner.snapshots import load_latest_snapshot, save_snapshot
 from tools import load
-from datetime import datetime
 
-def add_event(db, kind, ip='', detail=''):
-    db.add(Event(kind=kind, ip=ip, detail=detail))
+async def add_event(db, kind, ip='', detail=''):
+    event = Event(kind=kind, ip=ip, detail=detail)
+    db.add(event)
+    await publish_event('netdiff:events', {'kind': kind, 'ip': ip, 'detail': detail})
 
-def save_devices(db, devices, operation_id):
+async def save_devices(db, devices, operation_id):
     now = datetime.now()
     for ip, info in devices.items():
-        device = db.query(Device).filter_by(ip=ip).first()
+        stmt = select(Device).filter_by(ip=ip)
+        res = await db.execute(stmt)
+        device = res.scalars().first()
         if device is None:
             device = Device(ip=ip, hostname=info['hostname'])
             db.add(device)
-            db.flush()
+            await db.flush()
         device.hostname = info['hostname']
         device.last_seen = now
-        ports = ','.join((str(p) for p in info['ports']))
+        ports = ','.join(str(p) for p in info['ports'])
         db.add(Track(device_id=device.id, operation_id=operation_id, open_ports=ports))
 
-def save_events(db, old, new, result):
+async def save_events(db, old, new, result):
     black = load('black-list')
     white = load('white-list')
     if old is None:
-        add_event(db, 'first_scan', detail=f'{len(new)} dispositivos')
+        await add_event(db, 'first_scan', detail=f'{len(new)} dispositivos')
         return
     for ip in result['new']:
         if white.contains(ip):
             continue
-        add_event(db, 'new_device', ip, new[ip]['hostname'])
+        await add_event(db, 'new_device', ip, new[ip]['hostname'])
         if black.contains(ip):
-            add_event(db, 'blacklist_alert', ip, 'IP de la lista negra apareció')
+            await add_event(db, 'blacklist_alert', ip, 'IP de lista negra detectada')
     for ip in result['removed']:
-        add_event(db, 'removed_device', ip)
+        await add_event(db, 'removed_device', ip)
     for ip, change in result['ports'].items():
-        add_event(db, 'ports_changed', ip, f"abiertos={change['opened']} cerrados={change['closed']}")
+        await add_event(db, 'ports_changed', ip, f"abiertos={change['opened']} cerrados={change['closed']}")
 
-def run_check(db, target):
+async def run_check(db, target):
     devices = scan_network(target)
     old = load_latest_snapshot()
     save_snapshot(devices)
+    await cache_set('netdiff:latest_snapshot', devices, expire=600)
     result = compare_scans(old or {}, devices)
     operation = Operation(kind='monitor', target=target)
     db.add(operation)
-    db.flush()
-    save_devices(db, devices, operation.id)
-    save_events(db, old, devices, result)
-    db.commit()
+    await db.flush()
+    await save_devices(db, devices, operation.id)
+    await save_events(db, old, devices, result)
+    await db.commit()
     return result

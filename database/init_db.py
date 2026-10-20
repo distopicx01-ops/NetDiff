@@ -1,8 +1,6 @@
-from backend.models import device, operation, system, track
-from database.motor.eng import Base, engine
+import asyncio
+from database.motor.eng import init_db
 
-def init_db():
-    Base.metadata.create_all(engine)
 if __name__ == '__main__':
-    init_db()
+    asyncio.run(init_db())
     print('Tablas creadas')
