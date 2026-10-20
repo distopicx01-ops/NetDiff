@@ -1,11 +1,6 @@
 @echo off
-title NetDiff - Bucle de Monitoreo
+title NetDiff
 cd /d "%~dp0"
-
-echo ===================================================
-echo             INICIANDO NETDIFF EN BUCLE             
-echo ===================================================
-echo.
 
 if exist .venv\Scripts\python.exe (
     set PYTHON_EXEC=.venv\Scripts\python.exe
@@ -14,5 +9,4 @@ if exist .venv\Scripts\python.exe (
 )
 
 %PYTHON_EXEC% modo_dual.py %*
-
 pause

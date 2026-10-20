@@ -1,5 +1,4 @@
 services:
-  # El demonio: revisa la red cada INTERVAL segundos y guarda los cambios
   daemon:
     build: .
     container_name: netdiff-daemon
@@ -11,7 +10,6 @@ services:
     volumes:
       - netdiff-data:/app/data
 
-  # La API: consulta lo que guardo el demonio
   api:
     build: .
     container_name: netdiff-api

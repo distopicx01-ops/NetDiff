@@ -1,6 +1,5 @@
 FROM python:3.13-slim
 
-# nmap es el programa que hace el escaneo de verdad
 RUN apt-get update \
     && apt-get install -y --no-install-recommends nmap \
     && rm -rf /var/lib/apt/lists/*
@@ -21,5 +20,4 @@ ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     DATABASE=sqlite:///./data/data.db
 
-# Por defecto arranca la API. El demonio lo cambia en docker-compose.
 CMD ["uvicorn", "backend.api:app", "--host", "0.0.0.0", "--port", "8000"]
