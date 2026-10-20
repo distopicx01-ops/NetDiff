@@ -2,55 +2,57 @@
 
 ```
 NetDiff/
-  CLI/                    -> lo que el usuario usa desde la terminal
-    cli.py                -> lee los comandos (scan, diff, deep, check...)
+  CLI/                    -> comandos de terminal
+    cli.py                -> lee los comandos (scan, diff, deep, check, listas)
     src/
       commands/           -> un archivo por comando
-      scanner/            -> escaneo con nmap + comparar escaneos (diff)
+      scanner/
+        nmap_scan.py      -> escaneo con python-nmap
+        diff.py           -> compara dos escaneos
+        snapshots.py      -> guarda/lee las "fotos" en data/snapshots
       functions/
-        deepScann/        -> escaneo profundo (versiones de servicios)
+        deepScann/        -> versiones de servicios (nmap -sV)
         pentesting/       -> revisa puertos peligrosos
-      systems/            -> adivina el sistema operativo
+      systems/            -> adivina el sistema operativo por los puertos
   backend/
-    models/               -> tablas de la base de datos (device, system,
-                             operation, track, event)
+    models/               -> tablas: device, event, operation, track, system, user
+    schemas.py            -> modelos Pydantic (lo que entra y sale de la API)
+    auth.py               -> passlib (hash de claves) + JWT (tokens)
     monitor.py            -> una revision: escanear, comparar y guardar
-    daemon.py             -> el demonio: repite monitor.py cada INTERVAL segundos
-    api.py                -> API (FastAPI) para consultar el estado
-  Dockerfile              -> imagen con Python + nmap
-  docker-compose.yml      -> levanta 2 servicios: daemon y api
+    daemon.py             -> bucle asyncio: repite monitor.py cada INTERVAL
+    api.py                -> API FastAPI
   database/
-    motor/eng.py          -> conexion a la base de datos (SQLAlchemy)
+    motor/eng.py          -> SQLAlchemy async + SQLite (aiosqlite)
     init_db.py            -> crea las tablas
   tools/                  -> utilidades pequenas
-    white-list/           -> IPs conocidas que se ignoran
+    white-list/           -> IPs conocidas que no dan aviso
     black-list/           -> IPs peligrosas que dan alerta
-    keys/                 -> claves de acceso (se guardan con hash)
-    users/                -> usuarios
-    enterprises/          -> empresas
+    keys/ users/ enterprises/
     storage.py            -> leer/guardar JSON
-  systems/                -> datos para adivinar el sistema operativo
-  src/netdiff/            -> punto de entrada del paquete (comando netdiff)
-  tests/                  -> pruebas
+  systems/                -> tabla puerto -> sistema operativo
+  src/netdiff/            -> punto de entrada (comando netdiff)
+  scripts/scan.sh         -> escaneo rapido desde bash
+  start.sh                -> arranque rapido desde bash
+  modo_dual.py            -> demonio + API en un solo comando
+  Dockerfile, docker-compose.yml
+  tests/                  -> pruebas (unittest)
 ```
 
-## Flujo basico
+## Flujo del demonio
 
-1. `scan` escanea la red y guarda una "foto" (snapshot) en `data/snapshots`.
-2. `diff` escanea otra vez y compara con la ultima foto.
-3. `deep` busca versiones de servicios en un equipo.
-4. `check` busca puertos peligrosos (telnet, ftp, rdp...).
-## Demonio y API (Docker)
+1. `daemon.py` llama a `run_check` cada `INTERVAL` segundos.
+2. `run_check` escanea con nmap (en un hilo, para no bloquear asyncio).
+3. Compara con la ultima foto y guarda equipos, puertos y eventos en SQLite.
+4. `api.py` lee esa base de datos y responde por HTTP.
 
-```
-  docker-compose
-   â”œâ”€ daemon  -> cada INTERVAL segundos: escanea TARGET, compara con la
-   â”‚             ultima foto y guarda equipos y eventos en la base de datos
-   â””â”€ api     -> lee la base de datos y responde por HTTP (puerto 8000)
+## Eventos
 
-   Los dos comparten el volumen "netdiff-data" (carpeta /app/data):
-   data.db, snapshots/, white_list.json, black_list.json
-```
+`first_scan`, `new_device`, `removed_device`, `ports_changed`, `blacklist_alert`.
 
-Tipos de evento: `first_scan`, `new_device`, `removed_device`,
-`ports_changed`, `blacklist_alert`.
+## Seguridad de la API
+
+- `POST /auth/register`: el primer usuario es `admin`, los demas `viewer`.
+- `POST /auth/login`: devuelve un token JWT.
+- `POST /scan`: solo admin. El `target` debe ser una IP o una red valida.
+- El resto de consultas (`GET`) son publicas.
+- Define `JWT_SECRET` en `.env`; si esta vacio se genera uno aleatorio en cada arranque.
