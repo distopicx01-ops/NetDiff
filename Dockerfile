@@ -18,6 +18,6 @@ COPY src ./src
 
 ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
-    DATABASE=sqlite:///./data/data.db
+    DATABASE=sqlite+aiosqlite:///./data/data.db
 
 CMD ["uvicorn", "backend.api:app", "--host", "0.0.0.0", "--port", "8000"]

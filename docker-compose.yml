@@ -1,11 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: netdiff-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-
   daemon:
     build: .
     container_name: netdiff-daemon
@@ -14,12 +7,9 @@ services:
     environment:
       TARGET: ${TARGET:-127.0.0.1}
       INTERVAL: ${INTERVAL:-300}
-      REDIS_URL: redis://redis:6379/0
-      DATABASE: sqlite:///./data/data.db
+      JWT_SECRET: ${JWT_SECRET:-}
     volumes:
       - netdiff-data:/app/data
-    depends_on:
-      - redis
 
   api:
     build: .
@@ -28,13 +18,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      REDIS_URL: redis://redis:6379/0
-      DATABASE: sqlite:///./data/data.db
+      JWT_SECRET: ${JWT_SECRET:-}
     volumes:
       - netdiff-data:/app/data
     depends_on:
       - daemon
-      - redis
 
 volumes:
   netdiff-data:
