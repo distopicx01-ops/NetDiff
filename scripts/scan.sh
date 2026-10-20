@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -e
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-TARGET="${1:-127.0.0.1}"
-
-if [ -f ".venv/bin/python" ]; then
-    PYTHON_BIN=".venv/bin/python"
-elif [ -f ".venv/Scripts/python.exe" ]; then
-    PYTHON_BIN=".venv/Scripts/python.exe"
-else
-    PYTHON_BIN="python"
+if [ $# -lt 1 ]; then
+    echo "Uso: scripts/scan.sh <red>   ejemplo: scripts/scan.sh 192.168.1.0/24"
+    exit 1
 fi
 
-$PYTHON_BIN -m CLI.cli scan "$TARGET"
+if [ -x ".venv/bin/python" ]; then
+    PY=".venv/bin/python"
+elif [ -x ".venv/Scripts/python.exe" ]; then
+    PY=".venv/Scripts/python.exe"
+else
+    PY="python"
+fi
+
+"$PY" -m CLI.cli scan "$1"
